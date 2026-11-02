@@ -175,29 +175,19 @@ jobs:
               )
               raise SystemExit(0)
 
-          # состояние предыдущей завершённой проверки — чтобы не спамить
-          prev = None
-          try:
-              runs = gh("GET", "/actions/workflows/uptime.yml/runs?status=completed&per_page=1")
-              wr = runs.get("workflow_runs", [])
-              if wr:
-                  prev = wr[0].get("conclusion")
-          except Exception as e:
-              print("previous run lookup failed:", type(e).__name__)
+          # Состояние храним в открытом issue: есть issue — уже авария, нет — всё хорошо.
+          issues_open = open_issues()
 
-          if not ok and prev != "failure":
+          if not ok and not issues_open:
               send_telegram(
                   "🔴 <b>MediaHub Pro недоступен</b>\n"
                   f"Сайт: {site}\nБот: {bot}\nHeartbeat: {age} с назад\n"
                   f"<a href=\"{run_url}\">Детали проверки</a>"
               )
-              if not open_issues():
-                  create_issue()
-          elif ok and prev == "failure":
+              create_issue()
+          elif ok and issues_open:
               send_telegram("🟢 <b>MediaHub Pro снова работает</b>\nСайт и бот отвечают.")
-              close_issues(open_issues())
+              close_issues(issues_open)
           else:
-              print(f"state unchanged, no alert (ok={ok}, prev={prev})")
-              if not ok and not open_issues():
-                  create_issue()
+              print(f"state unchanged (ok={ok}, open_issues={len(issues_open)})")
           PY
