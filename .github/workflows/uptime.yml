@@ -9,6 +9,10 @@ on:
         description: "Отправить тестовое сообщение в Telegram"
         type: boolean
         default: false
+      force_down:
+        description: "Симулировать падение (проверка алертов)"
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -27,6 +31,8 @@ jobs:
     steps:
       - name: Проверка сайта и бота
         id: check
+        env:
+          FORCE_DOWN: ${{ inputs.force_down }}
         run: |
           set +e
 
@@ -51,6 +57,10 @@ jobs:
           [ "$site" = "200" ] || ok=0
           [ "$bot" = "active" ] || ok=0
           if [ "$age" -lt 0 ] || [ "$age" -gt 300 ]; then ok=0; fi
+
+          if [ "$FORCE_DOWN" = "true" ]; then
+            ok=0; site="TEST"; bot="TEST"; age=999
+          fi
 
           echo "site=$site bot=$bot age=${age}s ok=$ok"
           {
